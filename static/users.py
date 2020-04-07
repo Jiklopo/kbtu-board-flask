@@ -14,7 +14,7 @@ telegram_login:
 '''
 
 
-class UserDb:
+class UserCollection:
     col: pymongo.collection.Collection
 
     def __init__(self, collection: pymongo.collection):
@@ -41,8 +41,8 @@ class UserDb:
             return Response(status=200)
         return jsonify(dict(error='No such user exists.'))
 
-    def update_user(self, data: dict):
-        u = self.col.update_one(data.get('filter'), {'$set': data.get('update')})
+    def update_user(self, filter, update):
+        u = self.col.update_one(filter, {'$set': update})
         print(u)
         return 'asfd'
 
