@@ -28,7 +28,7 @@ def user():
     elif request.method == 'DELETE':
         return userdb.delete_user(**data)
     elif request.method == 'PUT':
-        return userdb.update_user(data)
+        return userdb.update_user(data.get('filter'), data.get('update'))
     raise exceptions.MethodNotAllowed
 
 
@@ -54,6 +54,11 @@ def post():
     elif request.method == 'DELETE':
         return postdb.delete_post(**data)
     raise exceptions.MethodNotAllowed
+
+
+@app.errorhandler(400)
+def error_400(e):
+    return jsonify(dict(error=str(e)))
 
 
 @app.errorhandler(403)
