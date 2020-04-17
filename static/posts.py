@@ -16,7 +16,7 @@ class PostCollection:
     def get_post(self, **filter):
         pass
 
-    def create_post(self, **filter):
+    def create_post(self, **data):
         pass
 
     def update_post(self, filter: dict, update: dict):

@@ -1,5 +1,7 @@
-from flask import Flask, request, Response, jsonify, abort
+from flask import Flask, request, jsonify, Response
 import pymongo
+from werkzeug.security import safe_str_cmp
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_current_user
 from static.users import UserCollection
 from static.posts import PostCollection
 from werkzeug import exceptions
@@ -7,11 +9,32 @@ from werkzeug import exceptions
 app = Flask(__name__)
 client = pymongo.MongoClient('mongodb://localhost:27017')
 db = client['kbtuBoard']
-userdb = UserCollection(db['users'])
+userdb = UserCollection(db['users'], db['teachers'])
 postdb = PostCollection(db['posts'])
+jwt = JWTManager(app)
+app.config['JWT_SECRET_KEY'] = 'lol_kek_cheburek'
 
 
-@app.route('/api/users')
+@app.route('/api/token', methods=['POST'])
+def obtain_token():
+    data = get_data(request)
+    try:
+        username = data['username']
+        password = data['password']
+    except:
+        raise exceptions.BadRequest
+
+    user = userdb.users.find_one(dict(username=username))
+    if not user:
+        raise exceptions.NotFound
+
+    if user.get('password') == password:
+        token = create_access_token(identity=username)
+        return jsonify(dict(token=token))
+    raise exceptions.BadRequest
+
+
+@app.route('/api/users', methods=['GET'])
 def users():
     return userdb.get_users()
 
@@ -33,11 +56,19 @@ def user():
 
 
 @app.route('/api/posts', methods=['GET'])
-def posts():
+def get_posts():
     data = request.get_json()
     if data is None:
         data = {}
     return postdb.get_posts(**data)
+
+
+@app.route('/api/posts', methods=['POST'])
+@jwt_required
+def create_post():
+    data = get_data(request)
+    #return postdb.create_post(**data)
+    return str(get_current_user())
 
 
 @app.route('/api/post', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -79,6 +110,13 @@ def error_405(e):
 @app.errorhandler(500)
 def error_500(e):
     return jsonify(dict(error='Krivorukiy programmist.'))
+
+
+def get_data(request):
+    data = request.get_json()
+    if data is None:
+        data = {}
+    return data
 
 
 if __name__ == '__main__':
