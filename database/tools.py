@@ -19,7 +19,16 @@ class MongoJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def jsonify(*args, **kwargs):
-    """ jsonify with support for MongoDB ObjectId
-    """
-    return Response(json.dumps(dict(*args, **kwargs), cls=MongoJsonEncoder), mimetype='application/json')
+def jsonify(object):
+    return Response(json.dumps(dictify(object)), mimetype='application/json')
+
+
+def dictify(mongo_object):
+    d = dict(mongo_object)
+    if d.get('_id'):
+        d['_id'] = str(d['_id'])
+        d['id'] = d['_id']
+    return d
+
+def get_error(message: str, code=500):
+    return Response(dict(error=message), code)

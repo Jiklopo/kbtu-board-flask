@@ -1,7 +1,7 @@
 import pymongo
 from bson import ObjectId
 
-from .tools import jsonify
+from .tools import jsonify, dictify
 from flask import Response
 from flask import jsonify as jsonify_orig
 from werkzeug import exceptions
@@ -31,14 +31,14 @@ class UserCollection:
     def __init__(self, users: pymongo.collection.Collection):
         self.users = users
 
-    def get_users(self, limit=10):
-        return jsonify_orig([u for u in self.users.find({}, {'_id': 0, 'password': 0})[:limit]])
+    def get_users(self, query, limit=10):
+        return jsonify_orig([dictify(u) for u in self.users.find(query, {'password': 0})[:limit]])
 
     def get_user(self, **params):
         user = self.users.find_one(params)
         if user is None:
             return jsonify(dict(error='No such user exists'))
-        return jsonify(user)
+        return jsonify_orig(dictify(user))
 
     def get_user_by_id(self, id):
         user = self.users.find_one({'_id': ObjectId(id)})
@@ -52,30 +52,37 @@ class UserCollection:
             return Response(jsonify({'_id': u}), status=201)
         raise exceptions.BadRequest
 
-    def delete_user(self, **params):
-        u = self.users.delete_one(params)
+    def delete_user(self, id):
+        u = self.users.delete_one({'_id': ObjectId(id)})
         if u.deleted_count > 0:
             return Response(status=200)
         return jsonify(dict(error='No such user exists.'))
 
-    def update_user(self, filter, update):
-        u = self.users.update_one(filter, {'$set': update})
+    def update_user(self, query, update):
+        u = self.users.update_one(query, {'$set': update})
         if u.matched_count == 0:
             raise exceptions.NotFound
         return Response(status=204)
 
-    def register_teacher(self, id, **data):
-        return self.update_user({'_id': ObjectId(id)}, data)
+    def unregister_teacher(self, id):
+        return self.update_user({'_id': ObjectId(id)}, {'is_teaching': False})
 
-    def get_teacher(self, id):
+    def register_teacher(self, id, **data):
+        return self.update_user({'_id': ObjectId(id)}, {'teacher_info': data})
+
+    def get_teachers(self, query):
+        query['is_teaching'] = True
+        return self.get_users(query)
+
+    def generate_code(self):
+        pass
+
+    def check_code(self, code):
         pass
 
     def exists(self, username):
         return self.users.find({'username': username}) is None
 
-    @staticmethod
-    def get_error(message: str, code=500):
-        return Response(jsonify(dict(error=message), code))
 
     @staticmethod
     def validate_user(user: dict):

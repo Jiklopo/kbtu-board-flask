@@ -36,7 +36,7 @@ def obtain_token():
 
 @app.route('/users', methods=['GET'])
 def users():
-    return userdb.get_users()
+    return userdb.get_users(get_data(request))
 
 
 @app.route('/user', methods=['GET', 'POST'])
@@ -46,28 +46,45 @@ def get_post_user():
         return userdb.get_user(**data)
     elif request.method == 'POST':
         return userdb.create_user(data)
-    raise exceptions.MethodNotAllowed
 
 
-@app.route('/api/user', methods=['PUT', 'DELETE'])
+@app.route('/user', methods=['PUT', 'DELETE'])
 @jwt_required
 def put_delete_user():
     data = get_data(request)
     if request.method == 'DELETE':
-        return userdb.delete_user(**{'_id': get_id()})
+        return userdb.delete_user(get_id())
     elif request.method == 'PUT':
         return userdb.update_user({'_id': get_id()}, data)
     raise exceptions.MethodNotAllowed
 
 
-@app.route('/teacher', methods=['PUT, POST'])
+@app.route('/code', methods=['GET', 'POST'])
+def code():
+    pass
+
+
+@app.route('/check_code', methods=['GET'])
+def check_code():
+    pass
+
+
+@app.route('/teacher', methods=['PUT', 'POST', 'DELETE'])
 @jwt_required
 def teacher():
     data = get_data(request)
-    return userdb.register_teacher(get_jwt_identity()['id'], **data)
+    if request.method == 'DELETE':
+        return userdb.unregister_teacher(get_id())
+    return userdb.register_teacher(get_id(), **data)
 
 
-@app.route('/lost', methods=['GET'])
+@app.route('/search/study', methods=['GET'])
+def get_teachers():
+    data = get_data(request)
+    return userdb.get_teachers(data)
+
+
+@app.route('/search/lost', methods=['GET'])
 def get_posts():
     data = get_data(request)
     return postdb.get_posts(**data)
@@ -80,21 +97,19 @@ def create_post():
     return postdb.create_post(**data)
 
 
-@app.route('/lost>', methods=['GET', 'POST', 'PUT', 'DELETE'])
-def post():
+@app.route('/lost/<id>', methods=['GET', 'PUT', 'DELETE'])
+def post(id):
     data = get_data(request)
     if request.method == 'GET':
         return postdb.get_post(**data)
-    elif request.method == 'POST':
-        return postdb.create_post()
     elif request.method == 'PUT':
-        return postdb.update_post(data.get('filter'), data.get('update'))
+        return postdb.update_post({'_id': id}, data)
     elif request.method == 'DELETE':
-        return postdb.delete_post(**data)
+        return postdb.delete_post(**{'_id': id})
     raise exceptions.BadRequest
 
 
-@app.route('/test')
+@app.route('/test', methods=['GET'])
 @jwt_required
 def test():
     return get_jwt_identity()
@@ -129,6 +144,8 @@ def get_data(request):
     data = request.get_json()
     if data is None:
         data = {}
+    elif data.get('id'):
+        data['_id'] = ObjectId(data['id'])
     return data
 
 
