@@ -1,4 +1,4 @@
 /venv/
 /__pycache__/
 /.idea/
-static/__pycache__/
+database/__pycache__/
