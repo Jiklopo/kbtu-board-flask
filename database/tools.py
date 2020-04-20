@@ -30,5 +30,10 @@ def dictify(mongo_object):
         d['id'] = d['_id']
     return d
 
+
+def id_query(id):
+    return {'_id': ObjectId(id)}
+
+
 def get_error(message: str, code=500):
-    return Response(dict(error=message), code)
+    return Response(dict(error=message), status=code, content_type='application/json')

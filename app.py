@@ -9,7 +9,7 @@ from werkzeug import exceptions
 app = Flask(__name__)
 client = pymongo.MongoClient('mongodb://localhost:27017')
 db = client['kbtuBoard']
-userdb = UserCollection(db['users'])
+userdb = UserCollection(db)
 postdb = PostCollection(db['posts'])
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'lol_kek_cheburek'
@@ -39,34 +39,33 @@ def users():
     return userdb.get_users(get_data(request))
 
 
-@app.route('/user', methods=['GET', 'POST'])
+@app.route('/user', methods=['POST'])
 def get_post_user():
     data = get_data(request)
-    if request.method == 'GET':
-        return userdb.get_user(**data)
-    elif request.method == 'POST':
-        return userdb.create_user(data)
+    return userdb.create_user(**data)
 
 
-@app.route('/user', methods=['PUT', 'DELETE'])
+@app.route('/user', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
 def put_delete_user():
     data = get_data(request)
     if request.method == 'DELETE':
         return userdb.delete_user(get_id())
     elif request.method == 'PUT':
-        return userdb.update_user({'_id': get_id()}, data)
-    raise exceptions.MethodNotAllowed
+        return userdb.update_user(get_id(), data)
+    elif request.method == 'GET':
+        return userdb.get_user()
 
 
 @app.route('/code', methods=['GET', 'POST'])
 def code():
-    pass
-
+    if request.method == 'GET':
+        return userdb.generate_code()
+    return userdb.validate_code(get_data(request))
 
 @app.route('/check_code', methods=['GET'])
 def check_code():
-    pass
+    return userdb.check_code(get_data(request).get('code'))
 
 
 @app.route('/teacher', methods=['PUT', 'POST', 'DELETE'])
@@ -75,8 +74,9 @@ def teacher():
     data = get_data(request)
     if request.method == 'DELETE':
         return userdb.unregister_teacher(get_id())
-    return userdb.register_teacher(get_id(), **data)
-
+    if request.method == 'POST':
+        return userdb.register_teacher(get_id(), **data)
+    return userdb.update_teacher(get_id(), **data)
 
 @app.route('/search/study', methods=['GET'])
 def get_teachers():

@@ -56,7 +56,3 @@ class PostCollection:
         if p.deleted_count > 0:
             return Response(status=200)
         return jsonify(dict(error='No such user exists.'))
-
-    @staticmethod
-    def get_error(message: str, code=500):
-        return Response(jsonify(dict(error=message), code))
