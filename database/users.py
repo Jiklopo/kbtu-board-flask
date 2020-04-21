@@ -74,7 +74,7 @@ class UserCollection:
     def unregister_teacher(self, user_id):
         return self.update_user(user_id, {'teacher_info.is_teaching': False})
 
-    def register_teacher(self, id, **data):
+    def register_teacher(self, user_id, **data):
         teacher_info = {'subjects': data.get('subjects'),
                         'rating': data['rating'] if 'rating' in data else 0,
                         'quote': data.get('quote'),
@@ -85,7 +85,7 @@ class UserCollection:
             if i in ['subjects', 'rating', 'quote', 'is_teaching']:
                 del data[i]
         data['teacher_info'] = teacher_info
-        return self.update_user({'_id': ObjectId(id)}, data)
+        return self.update_user({'_id': ObjectId(user_id)}, data)
 
     def update_teacher(self, user_id, **data):
         user = self.users.find_one(id_query(user_id))

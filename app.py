@@ -8,9 +8,9 @@ from werkzeug import exceptions
 
 app = Flask(__name__)
 client = pymongo.MongoClient('mongodb://localhost:27017')
-db = client['kbtuBoard']
+db = client['kbtu_board']
 userdb = UserCollection(db)
-postdb = PostCollection(db['posts'])
+postdb = PostCollection(db)
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'lol_kek_cheburek'
 
@@ -54,7 +54,7 @@ def put_delete_user():
     elif request.method == 'PUT':
         return userdb.update_user(get_id(), data)
     elif request.method == 'GET':
-        return userdb.get_user()
+        return userdb.get_user(get_id())
 
 
 @app.route('/code', methods=['GET', 'POST'])
@@ -94,6 +94,7 @@ def get_posts():
 @jwt_required
 def create_post():
     data = get_data(request)
+    data['user_id'] = ObjectId(get_id())
     return postdb.create_post(**data)
 
 

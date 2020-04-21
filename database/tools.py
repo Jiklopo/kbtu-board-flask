@@ -28,6 +28,8 @@ def dictify(mongo_object):
     if d.get('_id'):
         d['_id'] = str(d['_id'])
         d['id'] = d['_id']
+    if d.get('user_id'):
+        d['user_id'] = str(d['user_id'])
     return d
 
 

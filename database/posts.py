@@ -1,5 +1,5 @@
 import pymongo
-from .tools import jsonify
+from .tools import jsonify, dictify
 from flask import jsonify as jsonify_original
 from bson import ObjectId
 
@@ -24,13 +24,12 @@ Post Fields:
 class PostCollection:
     posts: pymongo.collection.Collection
 
-    def __init__(self, posts: pymongo.collection.Collection):
-        self.posts = posts
+    def __init__(self, database):
+        self.posts = database['posts']
 
     def get_posts(self, **filter):
-        return jsonify_original(
-            [dict(post) for post in self.posts.find(filter)]
-        )
+        posts = self.posts.find({}, {'_id': 0})
+        return jsonify_original([dictify(post) for post in posts])
 
     def get_post(self, **params):
         post = self.posts.find_one(params)
@@ -39,11 +38,11 @@ class PostCollection:
         return jsonify(post)
 
     def get_last_posts(self, limit=10):
-        return jsonify_orig([p for p in self.posts.find({}).sort({'time', -1})[:limit]])
+        return jsonify_orig([dictify(p) for p in self.posts.find({}).sort({'time', -1})[:limit]])
 
-    def create_post(self, post: dict):
+    def create_post(self, **post):
         p = self.posts.insert_one(post).inserted_id
-        return Response(jsonify({'_id': p}), status=201)
+        return Response(str(p), status=201)
 
     def update_post(self, filter: dict, update: dict):
         p = self.posts.update_one(filter, {'$set': update})
