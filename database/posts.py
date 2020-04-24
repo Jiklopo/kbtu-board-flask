@@ -1,9 +1,10 @@
 import pymongo
-from .tools import jsonify, dictify
-from flask import jsonify as jsonify_original
-from bson import ObjectId
 
-from .tools import jsonify
+from rabbit.publisher import RabbitPublisher
+from tools.tools import dictify
+from flask import jsonify as jsonify_original
+
+from tools.tools import jsonify
 from flask import Response
 from flask import jsonify as jsonify_orig
 from werkzeug import exceptions
@@ -26,6 +27,7 @@ class PostCollection:
 
     def __init__(self, database):
         self.posts = database['posts']
+        self.publisher = RabbitPublisher()
 
     def get_posts(self, **filter):
         posts = self.posts.find({}, {'_id': 0})
@@ -42,6 +44,11 @@ class PostCollection:
 
     def create_post(self, **post):
         p = self.posts.insert_one(post).inserted_id
+        message = f"Новый Пост!\n{post.get('title')}\n{post.get('description')}\n@{post.get('telegram_username')}"
+        try:
+            self.publisher.publish(message)
+        except Exception as e:
+            print(f'RabbitMQ exception: {str(e)}')
         return Response(str(p), status=201)
 
     def update_post(self, filter: dict, update: dict):

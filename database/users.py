@@ -1,7 +1,7 @@
 import pymongo
 from bson import ObjectId
 
-from .tools import jsonify, dictify, id_query
+from tools.tools import jsonify, dictify, id_query
 from flask import Response
 from flask import jsonify as jsonify_orig
 from werkzeug import exceptions
@@ -85,7 +85,7 @@ class UserCollection:
             if i in ['subjects', 'rating', 'quote', 'is_teaching']:
                 del data[i]
         data['teacher_info'] = teacher_info
-        return self.update_user({'_id': ObjectId(user_id)}, data)
+        return self.update_user(user_id, data)
 
     def update_teacher(self, user_id, **data):
         user = self.users.find_one(id_query(user_id))

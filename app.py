@@ -1,10 +1,12 @@
 from bson import ObjectId
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 import pymongo
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from database.users import UserCollection
 from database.posts import PostCollection
 from werkzeug import exceptions
+import datetime
+import tools.password_manager as pm
 
 app = Flask(__name__)
 client = pymongo.MongoClient('mongodb://localhost:27017')
@@ -28,8 +30,13 @@ def obtain_token():
     if user is None:
         raise exceptions.NotFound
 
-    if user.get('password') == password:
-        token = create_access_token(identity=dict(id=str(user.get('_id')), username=username))
+    password_manager = pm.PasswordManager(user.get('password'))
+
+    if password_manager.verify_password(password):
+        token = create_access_token(identity=dict(id=str(user.get('_id')),
+                                                  username=username,
+                                                  telegram_username=user.get('telegram_username')),
+                                    expires_delta=datetime.timedelta(minutes=30))
         return jsonify(dict(token=token))
     raise exceptions.BadRequest
 
@@ -42,6 +49,7 @@ def users():
 @app.route('/user', methods=['POST'])
 def get_post_user():
     data = get_data(request)
+    data['password'] = pm.PasswordManager.hash_password(data['password'])
     return userdb.create_user(**data)
 
 
@@ -63,7 +71,8 @@ def code():
         return userdb.generate_code()
     return userdb.validate_code(get_data(request))
 
-@app.route('/check_code', methods=['GET'])
+
+@app.route('/check-code', methods=['GET'])
 def check_code():
     return userdb.check_code(get_data(request).get('code'))
 
@@ -77,6 +86,7 @@ def teacher():
     if request.method == 'POST':
         return userdb.register_teacher(get_id(), **data)
     return userdb.update_teacher(get_id(), **data)
+
 
 @app.route('/search/study', methods=['GET'])
 def get_teachers():
@@ -95,6 +105,7 @@ def get_posts():
 def create_post():
     data = get_data(request)
     data['user_id'] = ObjectId(get_id())
+    data['telegram_username'] = get_jwt_identity()['telegram_username']
     return postdb.create_post(**data)
 
 
