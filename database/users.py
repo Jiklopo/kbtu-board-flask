@@ -108,10 +108,10 @@ class UserCollection:
         return code
 
     def validate_code(self, data):
-        if not data.get('code') or not data.get('chat_id') or not data.get('telegram_username'):
-            raise exceptions.BadRequest
+        # if not data.get('code') or not data.get('chat_id') or not data.get('telegram_username'):
+        #     raise exceptions.BadRequest
         if self.codes.find_one({'code': data['code']})['is_valid']:
-            return Response('Code already validated.', status=500)
+            return Response('Code already validated.', status=201)
         self.codes.update_one({'code': data['code']},
                               {'$set': {'is_valid': True,
                                         'chat_id': data['chat_id'],

@@ -8,7 +8,7 @@ from tools.tools import jsonify
 from flask import Response
 from flask import jsonify as jsonify_orig
 from werkzeug import exceptions
-
+import json
 '''
 Post Fields:
     title
@@ -30,7 +30,7 @@ class PostCollection:
         self.publisher = RabbitPublisher()
 
     def get_posts(self, **filter):
-        posts = self.posts.find({}, {'_id': 0})
+        posts = self.posts.find(filter, {'_id': 0})
         return jsonify_original([dictify(post) for post in posts])
 
     def get_post(self, **params):
@@ -44,9 +44,11 @@ class PostCollection:
 
     def create_post(self, **post):
         p = self.posts.insert_one(post).inserted_id
-        message = f"Новый Пост!\n{post.get('title')}\n{post.get('description')}\n@{post.get('telegram_username')}"
+        message = {"title": post.get('title'),
+                   "description": post.get('description'),
+                   "telegram_username": post.get('telegram_username')}
         try:
-            self.publisher.publish(message)
+            self.publisher.publish(json.dumps(message))
         except Exception as e:
             print(f'RabbitMQ exception: {str(e)}')
         return Response(str(p), status=201)

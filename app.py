@@ -69,7 +69,8 @@ def put_delete_user():
 def code():
     if request.method == 'GET':
         return userdb.generate_code()
-    return userdb.validate_code(get_data(request))
+    elif request.method == 'POST':
+        return userdb.validate_code(request.get_json())
 
 
 @app.route('/check-code', methods=['GET'])
@@ -129,7 +130,7 @@ def test():
 
 @app.errorhandler(400)
 def error_400(e):
-    return jsonify(dict(error=str(e)))
+    return jsonify(dict(error=str(e)), status=400)
 
 
 @app.errorhandler(403)
@@ -164,6 +165,6 @@ def get_data(request):
 def get_id():
     return ObjectId(get_jwt_identity()['id'])
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
+#
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0')
