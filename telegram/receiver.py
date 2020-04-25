@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import json
+import pika
+import telebot
 from pymongo import MongoClient
-import pika, telebot, ast, json, time
-
 
 TELEGRAM_TOKEN = '1234527124:AAHUVJO08IFAzAYlFHcikdSAhEtKAKhq3As'
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 client = MongoClient('localhost', 27017)
 db = client['subscribed_usersDB']
+
 
 class MetaClass(type):
     _instance = {}
@@ -44,24 +46,24 @@ class rabbitmqServer():
         users = db['subscribed_users'].find({'subscribed': True})
         print(users)
         for user in users:
-            bot.send_message(user.get('_id'), 
-            '''
-Новое объявление!
-
-Заголовок:
-%s
-
-Описание:
-%s
-
-От:
-%s
-
-
-Вы видите это сообщение потому, что подписались на обновления "Потеряно и найдено".
-Для отмены подписки используйте команду /unsubscribe.
-
-            ''' % (post.get('title'), post.get('description'), post.get('telegram_username')))    
+            bot.send_message(user.get('_id'),
+                             '''
+                 Новое объявление!
+                 
+                 Заголовок:
+                 %s
+                 
+                 Описание:
+                 %s
+                 
+                 От:
+                 @%s
+                 
+                 
+                 Вы видите это сообщение потому, что подписались на обновления "Потеряно и найдено".
+                 Для отмены подписки используйте команду /unsubscribe.
+                 
+                             ''' % (post.get('title'), post.get('description'), post.get('telegram_username')))
 
     def startserver(self):
         self._channel.basic_consume(

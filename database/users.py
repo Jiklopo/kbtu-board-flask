@@ -1,13 +1,13 @@
-import pymongo
-from bson import ObjectId
+import random
+import string
+import time
 
-from tools.tools import jsonify, dictify, id_query
+import pymongo
 from flask import Response
 from flask import jsonify as jsonify_orig
 from werkzeug import exceptions
-import string
-import random
-import time
+
+from tools.tools import jsonify, dictify, id_query
 
 '''
 User Fields:
@@ -87,7 +87,7 @@ class UserCollection:
         data['teacher_info'] = teacher_info
         return self.update_user(user_id, data)
 
-    def update_teacher(self, user_id, **data):
+    def update_teacher(self, user_id, data):
         user = self.users.find_one(id_query(user_id))
         if not user.get('teacher_info'):
             raise exceptions.BadRequest
@@ -95,6 +95,12 @@ class UserCollection:
         for i in data.keys():
             upd[f'teacher_info.{i}'] = data[i]
         return self.update_user(user_id, upd)
+
+    def rate_teacher(self, teacher_id, incr):
+        res = self.users.update_one(id_query(teacher_id), {'$inc': {'teacher_info.rating': incr}})
+        if self.users.find_one(id_query(teacher_id))['teacher_info']['rating'] < -5:
+            res = self.users.update_one(id_query(teacher_id), {'$set': {'teacher_info.is_teaching': False}})
+        return Response(status=204)
 
     def get_teachers(self, query):
         query['teacher_info.is_teaching'] = True

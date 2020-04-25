@@ -1,14 +1,15 @@
+import json
+
 import pymongo
+from flask import Response
+from flask import jsonify as jsonify_orig
+from flask import jsonify as jsonify_original
+from werkzeug import exceptions
 
 from rabbit.publisher import RabbitPublisher
 from tools.tools import dictify
-from flask import jsonify as jsonify_original
-
 from tools.tools import jsonify
-from flask import Response
-from flask import jsonify as jsonify_orig
-from werkzeug import exceptions
-import json
+
 '''
 Post Fields:
     title
@@ -30,7 +31,7 @@ class PostCollection:
         self.publisher = RabbitPublisher()
 
     def get_posts(self, **filter):
-        posts = self.posts.find(filter, {'_id': 0})
+        posts = self.posts.find(filter)
         return jsonify_original([dictify(post) for post in posts])
 
     def get_post(self, **params):

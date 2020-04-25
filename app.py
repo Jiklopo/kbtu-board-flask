@@ -1,12 +1,15 @@
+import datetime
+
+import pymongo
 from bson import ObjectId
 from flask import Flask, request, jsonify
-import pymongo
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
-from database.users import UserCollection
-from database.posts import PostCollection
 from werkzeug import exceptions
-import datetime
+
 import tools.password_manager as pm
+import tools.tools as t
+from database.posts import PostCollection
+from database.users import UserCollection
 
 app = Flask(__name__)
 client = pymongo.MongoClient('mongodb://localhost:27017')
@@ -86,7 +89,23 @@ def teacher():
         return userdb.unregister_teacher(get_id())
     if request.method == 'POST':
         return userdb.register_teacher(get_id(), **data)
-    return userdb.update_teacher(get_id(), **data)
+    return userdb.update_teacher(get_id(), data)
+
+
+@app.route('/teacher/like', methods=['PUT'])
+def like_teacher():
+    id = get_data(request).get('teacher_id')
+    if not id:
+        raise exceptions.BadRequest
+    return userdb.rate_teacher(id, 1)
+
+
+@app.route('/teacher/dislike', methods=['PUT'])
+def dislike_teacher():
+    id = get_data(request).get('teacher_id')
+    if not id:
+        raise exceptions.BadRequest
+    return userdb.rate_teacher(id, -1)
 
 
 @app.route('/search/study', methods=['GET'])
@@ -111,15 +130,20 @@ def create_post():
 
 
 @app.route('/lost/<id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required
 def post(id):
     data = get_data(request)
+    p = postdb.posts.find_one(t.id_query(id))
+    if not p:
+        raise exceptions.NotFound
+    if p.get('user_id') != get_id():
+        raise exceptions.Forbidden
     if request.method == 'GET':
         return postdb.get_post(**data)
     elif request.method == 'PUT':
-        return postdb.update_post({'_id': id}, data)
+        return postdb.update_post(t.id_query(id), data)
     elif request.method == 'DELETE':
-        return postdb.delete_post(**{'_id': id})
-    raise exceptions.BadRequest
+        return postdb.delete_post(**t.id_query(id))
 
 
 @app.route('/test', methods=['GET'])
@@ -164,7 +188,3 @@ def get_data(request):
 
 def get_id():
     return ObjectId(get_jwt_identity()['id'])
-
-#
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0')
